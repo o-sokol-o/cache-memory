@@ -1,5 +1,6 @@
 # An in-memory cache with element lifetime.
-===========================================
+
+
 ## Example
 
 ```go

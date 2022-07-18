@@ -9,11 +9,7 @@ import (
 	"github.com/zhashkevych/scheduler"
 )
 
-type CacheMemory interface {
-	Set(key string, value interface{})
-	Get(key string) (interface{}, error)
-	Delete(key string)
-}
+// TODO:  Delete fmt.Print*
 
 type cacheValue struct {
 	t    time.Time
@@ -50,22 +46,22 @@ func New(lifeTimeSec int64) *Cache {
 	return &c
 }
 
-func (c Cache) Set(key string, value interface{}) {
+func (c *Cache) Set(key string, value interface{}) {
 	c.cv[key] = cacheValue{time.Now(), value}
 }
 
-func (c Cache) Get(key string) (interface{}, error) {
+func (c *Cache) Get(key string) (interface{}, error) {
 	if v, ok := c.cv[key]; ok {
 		return v.data, nil
 	}
 	return nil, errors.New(key + " - key absent")
 }
 
-func (c Cache) Delete(key string) {
+func (c *Cache) Delete(key string) {
 	fmt.Println(key + " - key deleted")
 	delete(c.cv, key)
 }
 
-func (c Cache) Free() {
+func (c *Cache) Free() {
 	c.worker.Stop()
 }
