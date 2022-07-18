@@ -9,8 +9,6 @@ import (
 	"github.com/zhashkevych/scheduler"
 )
 
-var ()
-
 type CacheMemory interface {
 	Set(key string, value interface{})
 	Get(key string) (interface{}, error)
