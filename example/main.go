@@ -1,8 +1,3 @@
-# An in-memory cache with element lifetime.
-===========================================
-## Example
-
-```go
 package main
 
 import (
@@ -54,4 +49,3 @@ func main() {
 
 	cache.Free()
 }
-```
