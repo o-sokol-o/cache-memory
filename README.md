@@ -1,4 +1,4 @@
-# An in-memory cache with element lifetime.
+# Thread-safe in-memory cache with element lifetime.
 
 
 ## Example
