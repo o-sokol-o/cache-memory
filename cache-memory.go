@@ -23,7 +23,7 @@ func New(lifeTimeSec int) Cache {
 	return NewCacheMem(lifeTimeSec)
 }
 
-//===================================================================
+//================================  Implementation  ===================================
 
 const defaultLifeTimeSec int = 60 // default life time second
 
