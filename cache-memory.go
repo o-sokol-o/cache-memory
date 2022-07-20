@@ -31,7 +31,7 @@ func New(lifeTimeSec int64) *Cache {
 		cv:     make(map[string]cacheValue)}
 
 	c.worker.Add(c.ctx,
-		func(ctx context.Context) {
+		func(_ context.Context) {
 			func() {
 				for k, v := range c.cv {
 					if time.Now().UnixNano()-v.t.UnixNano() >= c.lt {
