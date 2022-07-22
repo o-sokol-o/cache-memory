@@ -13,9 +13,9 @@ import (
 )
 
 type Cache interface {
-	Set(key string, value interface{})
+	Set(key string, value interface{}) error
 	Get(key string) (interface{}, error)
-	Delete(key string)
+	Delete(key string) error
 	Free()
 }
 
@@ -79,11 +79,20 @@ func NewCacheMem(lifeTimeSec int) *CacheMem {
 	return &c
 }
 
-func (c *CacheMem) Set(key string, value interface{}) {
+func (c *CacheMem) Set(key string, value interface{}) error {
+	if key == "" || value == nil {
+		return errors.New("error - key or value absent")
+	}
+
 	c.cv.Store(key, cacheValue{time.Now().Add(c.lt), value}) // normal map: c.cv[key] = cacheValue{time.Now().Add(c.lt), value}
+	return nil
 }
 
 func (c *CacheMem) Get(key string) (interface{}, error) {
+	if key == "" {
+		return nil, errors.New("error - nil key")
+	}
+
 	// normal map: if v, ok := c.cv[key]; ok {
 	if v, ok := c.cv.Load(key); ok {
 		return v.(cacheValue).data, nil
@@ -91,9 +100,17 @@ func (c *CacheMem) Get(key string) (interface{}, error) {
 	return nil, errors.New(key + " - key absent")
 }
 
-func (c *CacheMem) Delete(key string) {
-	fmt.Println(key + " - key deleted")
-	c.cv.Delete(key) // normal map: delete(c.cv, key)
+func (c *CacheMem) Delete(key string) error {
+	if key == "" {
+		return errors.New("error - nil key")
+	}
+	_, ok := c.cv.LoadAndDelete(key) // normal map: delete(c.cv, key)
+	if ok {
+		fmt.Println(key + " - key deleted")
+	} else {
+		return errors.New(key + " - key absent")
+	}
+	return nil
 }
 
 func (c *CacheMem) Free() {
