@@ -14,6 +14,7 @@ import (
 
 type Cache interface {
 	Set(key string, value interface{}) error
+	SetWithLifetime(key string, value interface{}, ttl time.Duration) error
 	Get(key string) (interface{}, error)
 	Delete(key string) error
 	Free()
@@ -85,6 +86,15 @@ func (c *CacheMem) Set(key string, value interface{}) error {
 	}
 
 	c.cv.Store(key, cacheValue{time.Now().Add(c.lt), value}) // normal map: c.cv[key] = cacheValue{time.Now().Add(c.lt), value}
+	return nil
+}
+
+func (c *CacheMem) SetWithLifetime(key string, value interface{}, ttl time.Duration) error {
+	if key == "" || value == nil || ttl == 0 {
+		return errors.New("error - key or value or duration absent")
+	}
+
+	c.cv.Store(key, cacheValue{time.Now().Add(ttl), value})
 	return nil
 }
 

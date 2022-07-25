@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	"strconv"
 	"time"
 
 	cachememory "github.com/o-sokol-o/cache-memory"
@@ -31,7 +33,7 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
-	// - - - - - -
+	// - - - - - - Example lifetime - - - - - - -
 
 	fmt.Printf("\nLife time cache:\n")
 
@@ -44,8 +46,20 @@ func main() {
 			fmt.Println(err.Error())
 		}
 
-		time.Sleep(1000000000)
+		time.Sleep(time.Second)
 	}
+
+	// - - - - - - Example race condition: go run -race example/main.go  - - - - - - -
+
+	fmt.Printf("\n8000 goroutines write cache\n")
+	for i := 0; i < 8000; i++ {
+		go func() {
+			cache.SetWithLifetime("userId"+strconv.Itoa(rand.Intn(10000000)), 42, 7*time.Second)
+		}()
+	}
+
+	fmt.Printf("Sleep 10 Second\n")
+	time.Sleep(10 * time.Second)
 
 	cache.Free()
 }
