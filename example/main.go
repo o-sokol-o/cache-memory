@@ -12,7 +12,7 @@ import (
 
 func main() {
 	fmt.Printf("\nNew cache = Life time cache value 3 sec\n")
-	cache := cachememory.New(3)
+	cache := cachememory.New(cachememory.ResolutionSeconds)
 
 	cache.Set("userId", 42, 0)
 	cache.Set("Pi", math.Pi, 0)

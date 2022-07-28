@@ -12,6 +12,16 @@ import (
 	"github.com/zhashkevych/scheduler"
 )
 
+type Resolution int
+
+const (
+	ResolutionDefault Resolution = iota
+	ResolutionSeconds
+	ResolutionMinutes
+	ResolutionHours
+	ResolutionDays
+)
+
 type Cache interface {
 	Set(key string, value interface{}, lifeTimeSec int) error
 	Get(key string) (interface{}, error)
@@ -19,13 +29,11 @@ type Cache interface {
 	Free()
 }
 
-func New(lifeTimeSec int) Cache {
-	return NewCacheMem(lifeTimeSec)
+func New(rs Resolution) Cache {
+	return NewCacheMem(rs)
 }
 
 //================================  Implementation  ===================================
-
-const defaultLifeTimeSec int = 60 // default life time second
 
 type cacheValue struct {
 	exp  time.Time
@@ -39,15 +47,29 @@ type CacheMem struct {
 	cv     sync.Map
 }
 
-func NewCacheMem(lifeTimeSec int) *CacheMem {
-	if lifeTimeSec < 1 {
-		lifeTimeSec = defaultLifeTimeSec
+func NewCacheMem(rs Resolution) *CacheMem {
+
+	var resolutionTime time.Duration
+	var defaultLifeTime time.Duration
+	switch rs {
+	case ResolutionMinutes:
+		resolutionTime = time.Minute
+		defaultLifeTime = 60 * time.Minute
+	case ResolutionHours:
+		resolutionTime = time.Hour
+		defaultLifeTime = 24 * time.Hour
+	case ResolutionDays:
+		resolutionTime = 24 * time.Hour
+		defaultLifeTime = 3 * 24 * time.Hour
+	default:
+		resolutionTime = time.Second
+		defaultLifeTime = 60 * time.Second
 	}
 
 	c := CacheMem{
 		ctx:    context.Background(),
 		worker: scheduler.NewScheduler(),
-		lt:     time.Duration(lifeTimeSec) * time.Second, // life time nanosecond
+		lt:     defaultLifeTime,
 	}
 
 	c.worker.Add(c.ctx,
@@ -64,7 +86,7 @@ func NewCacheMem(lifeTimeSec int) *CacheMem {
 				})
 			}()
 		},
-		time.Second)
+		resolutionTime)
 
 	return &c
 }
