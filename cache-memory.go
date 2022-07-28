@@ -23,7 +23,7 @@ const (
 )
 
 type Cache interface {
-	Set(key string, value interface{}, lifeTimeSec int) error
+	Set(key string, value interface{}, lifeTime int) error
 	Get(key string) (interface{}, error)
 	Delete(key string) error
 	Free()
@@ -44,6 +44,7 @@ type CacheMem struct {
 	worker *scheduler.Scheduler
 	ctx    context.Context
 	lt     time.Duration // life time nanosecond
+	rt     time.Duration
 	cv     sync.Map
 }
 
@@ -70,6 +71,7 @@ func NewCacheMem(rs Resolution) *CacheMem {
 		ctx:    context.Background(),
 		worker: scheduler.NewScheduler(),
 		lt:     defaultLifeTime,
+		rt:     resolutionTime,
 	}
 
 	c.worker.Add(c.ctx,
@@ -91,11 +93,11 @@ func NewCacheMem(rs Resolution) *CacheMem {
 	return &c
 }
 
-func (c *CacheMem) Set(key string, value interface{}, lifeTimeSec int) error {
-	if lifeTimeSec == 0 {
+func (c *CacheMem) Set(key string, value interface{}, lifeTime int) error {
+	if lifeTime == 0 {
 		c.cv.Store(key, cacheValue{time.Now().Add(c.lt), value})
 	} else {
-		c.cv.Store(key, cacheValue{time.Now().Add(time.Duration(lifeTimeSec) * time.Second), value})
+		c.cv.Store(key, cacheValue{time.Now().Add(time.Duration(lifeTime) * c.rt), value})
 	}
 	return nil
 }
