@@ -13,8 +13,7 @@ import (
 )
 
 type Cache interface {
-	Set(key string, value interface{}) error
-	SetWithLifetime(key string, value interface{}, ttl time.Duration) error
+	Set(key string, value interface{}, lifeTimeSec int) error
 	Get(key string) (interface{}, error)
 	Delete(key string) error
 	Free()
@@ -37,7 +36,7 @@ type CacheMem struct {
 	worker *scheduler.Scheduler
 	ctx    context.Context
 	lt     time.Duration // life time nanosecond
-	cv     sync.Map      // normal map: cv     map[string]cacheValue
+	cv     sync.Map
 }
 
 func NewCacheMem(lifeTimeSec int) *CacheMem {
@@ -49,21 +48,11 @@ func NewCacheMem(lifeTimeSec int) *CacheMem {
 		ctx:    context.Background(),
 		worker: scheduler.NewScheduler(),
 		lt:     time.Duration(lifeTimeSec) * time.Second, // life time nanosecond
-		// normal map: cv:     make(map[string]cacheValue),
 	}
 
 	c.worker.Add(c.ctx,
 		func(_ context.Context) {
 			func() {
-				/* normal map:
-				for key, val := range c.cv {
-					if time.Now().After(val.exp) {
-						fmt.Println(key + " - key deleted")
-						// delete(c.cv, key)
-						c.cv.Delete(key)
-					}
-				}
-				*/
 
 				c.cv.Range(func(key, value interface{}) bool {
 
@@ -80,30 +69,17 @@ func NewCacheMem(lifeTimeSec int) *CacheMem {
 	return &c
 }
 
-func (c *CacheMem) Set(key string, value interface{}) error {
-	if key == "" || value == nil {
-		return errors.New("error - key or value absent")
+func (c *CacheMem) Set(key string, value interface{}, lifeTimeSec int) error {
+	if lifeTimeSec == 0 {
+		c.cv.Store(key, cacheValue{time.Now().Add(c.lt), value})
+	} else {
+		c.cv.Store(key, cacheValue{time.Now().Add(time.Duration(lifeTimeSec) * time.Second), value})
 	}
-
-	c.cv.Store(key, cacheValue{time.Now().Add(c.lt), value}) // normal map: c.cv[key] = cacheValue{time.Now().Add(c.lt), value}
-	return nil
-}
-
-func (c *CacheMem) SetWithLifetime(key string, value interface{}, ttl time.Duration) error {
-	if key == "" || value == nil || ttl == 0 {
-		return errors.New("error - key or value or duration absent")
-	}
-
-	c.cv.Store(key, cacheValue{time.Now().Add(ttl), value})
 	return nil
 }
 
 func (c *CacheMem) Get(key string) (interface{}, error) {
-	if key == "" {
-		return nil, errors.New("error - nil key")
-	}
 
-	// normal map: if v, ok := c.cv[key]; ok {
 	if v, ok := c.cv.Load(key); ok {
 		return v.(cacheValue).data, nil
 	}
@@ -111,10 +87,8 @@ func (c *CacheMem) Get(key string) (interface{}, error) {
 }
 
 func (c *CacheMem) Delete(key string) error {
-	if key == "" {
-		return errors.New("error - nil key")
-	}
-	_, ok := c.cv.LoadAndDelete(key) // normal map: delete(c.cv, key)
+
+	_, ok := c.cv.LoadAndDelete(key)
 	if ok {
 		fmt.Println(key + " - key deleted")
 	} else {

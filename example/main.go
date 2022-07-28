@@ -14,8 +14,8 @@ func main() {
 	fmt.Printf("\nNew cache = Life time cache value 3 sec\n")
 	cache := cachememory.New(3)
 
-	cache.Set("userId", 42)
-	cache.Set("Pi", math.Pi)
+	cache.Set("userId", 42, 0)
+	cache.Set("Pi", math.Pi, 0)
 
 	fmt.Printf("Get:  ")
 	if userId, err := cache.Get("userId"); err == nil {
@@ -54,12 +54,13 @@ func main() {
 	fmt.Printf("\n8000 goroutines write cache\n")
 	for i := 0; i < 8000; i++ {
 		go func() {
-			cache.SetWithLifetime("userId"+strconv.Itoa(rand.Intn(10000000)), 42, 7*time.Second)
+			cache.Set("userId"+strconv.Itoa(rand.Intn(10000000)), 42, 7)
 		}()
 	}
 
 	fmt.Printf("Sleep 10 Second\n")
 	time.Sleep(10 * time.Second)
 
+	fmt.Printf("cache.Free\n")
 	cache.Free()
 }
