@@ -30,7 +30,7 @@ type Cache interface {
 }
 
 func New(rs Resolution) Cache {
-	return NewCacheMem(rs)
+	return newCacheMem(rs)
 }
 
 //================================  Implementation  ===================================
@@ -40,7 +40,7 @@ type cacheValue struct {
 	data interface{}
 }
 
-type CacheMem struct {
+type cacheMem struct {
 	worker *scheduler.Scheduler
 	ctx    context.Context
 	lt     time.Duration // life time nanosecond
@@ -48,7 +48,7 @@ type CacheMem struct {
 	cv     sync.Map
 }
 
-func NewCacheMem(rs Resolution) *CacheMem {
+func newCacheMem(rs Resolution) *cacheMem {
 
 	var resolutionTime time.Duration
 	var defaultLifeTime time.Duration
@@ -67,7 +67,7 @@ func NewCacheMem(rs Resolution) *CacheMem {
 		defaultLifeTime = 60 * time.Second
 	}
 
-	c := CacheMem{
+	c := cacheMem{
 		ctx:    context.Background(),
 		worker: scheduler.NewScheduler(),
 		lt:     defaultLifeTime,
@@ -93,7 +93,7 @@ func NewCacheMem(rs Resolution) *CacheMem {
 	return &c
 }
 
-func (c *CacheMem) Set(key string, value interface{}, lifeTime int) error {
+func (c *cacheMem) Set(key string, value interface{}, lifeTime int) error {
 	if lifeTime == 0 {
 		c.cv.Store(key, cacheValue{time.Now().Add(c.lt), value})
 	} else {
@@ -102,7 +102,7 @@ func (c *CacheMem) Set(key string, value interface{}, lifeTime int) error {
 	return nil
 }
 
-func (c *CacheMem) Get(key string) (interface{}, error) {
+func (c *cacheMem) Get(key string) (interface{}, error) {
 
 	if v, ok := c.cv.Load(key); ok {
 		return v.(cacheValue).data, nil
@@ -110,7 +110,7 @@ func (c *CacheMem) Get(key string) (interface{}, error) {
 	return nil, errors.New(key + " - key absent")
 }
 
-func (c *CacheMem) Delete(key string) error {
+func (c *cacheMem) Delete(key string) error {
 
 	_, ok := c.cv.LoadAndDelete(key)
 	if ok {
@@ -121,6 +121,6 @@ func (c *CacheMem) Delete(key string) error {
 	return nil
 }
 
-func (c *CacheMem) Free() {
+func (c *cacheMem) Free() {
 	c.worker.Stop()
 }
